@@ -1,7 +1,8 @@
 module Pronto
   describe Github do
     let(:github) { described_class.new(repo) }
-    let(:repo) { double(remote_urls: ssh_remote_urls, branch: nil, head_detached?: false) }
+    let(:branch) { nil }
+    let(:repo) { double(remote_urls: ssh_remote_urls, branch: branch, head_detached?: false) }
     let(:ssh_remote_urls) { ["git@github.com:#{github_slug}.git"] }
     let(:github_slug) { 'prontolabs/pronto' }
     let(:sha) { '61e4bef' }
@@ -33,8 +34,6 @@ module Pronto
       end
 
       context 'git remote without .git suffix' do
-        let(:repo) { double(remote_urls: ssh_remote_urls) }
-
         specify do
           Octokit::Client.any_instance
             .should_receive(:commit_comments)
@@ -112,11 +111,16 @@ module Pronto
         end
       end
 
-      context 'adds status to commit with sha' do
+      context 'when pull request could not be found using branch' do
+        let(:branch) { 'abc' }
         let(:expected_sha) { sha }
 
         specify do
-          octokit_client.should_not_receive(:pull_requests)
+          github_pull
+            .should_receive(:pull_by_branch)
+            .with(branch)
+            .once
+            .and_raise(Pronto::Error)
 
           subject
         end

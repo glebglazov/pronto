@@ -54,7 +54,13 @@ module Pronto
     end
 
     def create_commit_status(status)
-      sha = pull_sha || status.sha
+      sha = begin
+              pull_sha
+            rescue Pronto::Error
+              nil
+            end
+      sha ||= status.sha
+
       @config.logger.log("Creating comment status on #{sha}")
       client.create_status(slug, sha, status.state,
                            context: status.context,
